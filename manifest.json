@@ -1,0 +1,7 @@
+{
+  "id": "kpi-tile-configurable",
+  "label": "Configurable KPI Tile",
+  "uri": "kpi_tile.js",
+  "sri": "",
+  "dev": true
+}
