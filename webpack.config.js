@@ -1,9 +1,12 @@
 const path = require('path');
 
 module.exports = {
-  entry: './src/kpi_tile.js',
+  entry: {
+    kpi_tile: './src/kpi_tile.js',
+    dynamic_measure_bar_chart: './src/dynamic_measure_bar_chart.js'
+  },
   output: {
-    filename: 'kpi_tile.js',
+    filename: '[name].js',
     path: path.resolve(__dirname, 'dist'),
   },
   devServer: {

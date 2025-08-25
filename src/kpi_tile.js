@@ -1,3 +1,4 @@
+import 'chart.js/auto';
 looker.plugins.visualizations.add({
   // --- Visualization Configuration ---
   options: {
@@ -19,7 +20,7 @@ looker.plugins.visualizations.add({
     },
     showTooltip: {
         type: 'boolean',
-        label: 'Show Tooltip on Title Hover on Dashboard',
+        label: 'Show Measure Description on KPI Name Hover on Dashboard',
         default: true,
         section: 'Tooltip'
     },
@@ -71,6 +72,37 @@ looker.plugins.visualizations.add({
       display: 'color',
       default: '#F44336',
       section: 'Comparisons'
+    },
+    show_line_chart: {
+      type: 'boolean',
+      label: 'Show Line Chart',
+      default: true,
+      section: 'Chart'
+    },
+    line_chart_color: {
+      type: 'string',
+      label: 'Line Chart Color',
+      display: 'color',
+      default: '#1A73E8',
+      section: 'Chart'
+    },
+    goal: {
+      type: 'number',
+      label: 'Goal',
+      section: 'Goal'
+    },
+    show_goal_progress: {
+      type: 'boolean',
+      label: 'Show Goal Progress',
+      default: true,
+      section: 'Goal'
+    },
+    progress_bar_color: {
+      type: 'string',
+      label: 'Progress Bar Color',
+      display: 'color',
+      default: '#1A73E8',
+      section: 'Goal'
     }
   },
 
@@ -130,6 +162,22 @@ looker.plugins.visualizations.add({
           font-weight: 500;
           margin-top: 8px;
         }
+        .kpi-chart-container {
+          width: 100%;
+          height: 100px;
+          margin-top: 10px;
+        }
+        .progress-bar-container {
+          width: 80%;
+          height: 10px;
+          background-color: #e0e0e0;
+          border-radius: 5px;
+          margin-top: 10px;
+        }
+        .progress-bar {
+          height: 100%;
+          border-radius: 5px;
+        }
       </style>
       <div class="kpi-tile-container">
         <div class="kpi-title-container">
@@ -141,11 +189,16 @@ looker.plugins.visualizations.add({
             <div class="kpi-comparison" id="kpi-comparison-1"></div>
             <div class="kpi-comparison" id="kpi-comparison-2"></div>
         </div>
+        <div class="kpi-chart-container">
+          <canvas id="kpi-chart"></canvas>
+        </div>
+        <div class="progress-bar-container">
+          <div class="progress-bar"></div>
+        </div>
       </div>
     `;
   },
 
-  // --- Update Async Method ---
   updateAsync: function(data, element, config, queryResponse, details, done) {
     this.clearErrors();
 
@@ -172,11 +225,13 @@ looker.plugins.visualizations.add({
     const valueElement = element.querySelector('.kpi-value');
     const comparison1Element = element.querySelector('#kpi-comparison-1');
     const comparison2Element = element.querySelector('#kpi-comparison-2');
+    const chartContainer = element.querySelector('.kpi-chart-container');
+    const progressBarContainer = element.querySelector('.progress-bar-container');
+    const progressBar = element.querySelector('.progress-bar');
 
     titleElement.textContent = config.title || kpiMeasure.label_short || kpiMeasure.label;
     if (config.showTooltip) {
         tooltipElement.textContent = kpiMeasure.description;
-        console.log(kpiMeasure.description)
     } else {
         tooltipElement.style.display = 'none';
     }
@@ -187,6 +242,8 @@ looker.plugins.visualizations.add({
 
     comparison1Element.style.display = 'none';
     comparison2Element.style.display = 'none';
+    chartContainer.style.display = 'none';
+    progressBarContainer.style.display = 'none';
 
     // Comparison 1
     if (config.showComparison1 && queryResponse.fields.measures.length > 1) {
@@ -239,6 +296,52 @@ looker.plugins.visualizations.add({
         comparison2Element.style.display = 'block';
       }
     }
+
+    // Line Chart
+    if (config.show_line_chart && queryResponse.fields.dimensions.length > 0) {
+      chartContainer.style.display = 'block';
+      const dimension = queryResponse.fields.dimensions[0];
+      const labels = data.map(row => row[dimension.name].value);
+      const chartData = data.map(row => row[kpiMeasure.name].value);
+
+      const ctx = element.querySelector('#kpi-chart').getContext('2d');
+
+      if (this._chart) {
+        this._chart.destroy();
+      }
+
+      this._chart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: labels,
+          datasets: [{
+            data: chartData,
+            borderColor: config.line_chart_color,
+            borderWidth: 2,
+            pointRadius: 0,
+            fill: false
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          legend: { display: false },
+          scales: {
+            x: { display: false },
+            y: { display: false }
+          }
+        }
+      });
+    }
+
+    // Goal Progress
+    if (config.show_goal_progress && config.goal) {
+      progressBarContainer.style.display = 'block';
+      const progress = (kpiCell.value / config.goal) * 100;
+      progressBar.style.width = `${Math.min(progress, 100)}%`;
+      progressBar.style.backgroundColor = config.progress_bar_color;
+    }
+
     done();
   }
 });
