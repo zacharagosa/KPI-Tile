@@ -67,6 +67,17 @@ To test this visualization, you can use the development server and a Looker inst
 
 ## Dynamic Measure Bar Chart
 
-### Testing
+### Configuration
 
-To test this visualization, you can open the `dynamic_measure_bar_chart.html` file in your browser. This will load the visualization with some sample data.
+This visualization can be configured with the following options:
+
+*   **Title:** A custom title for the chart.
+*   **Chart Type:** Choose between "Grouped" and "Stacked" display types (this only applies when using two dimensions).
+*   **Color Scheme:** Select from "Default", "Cool", and "Warm" color palettes.
+
+### How it Works
+
+The chart includes a dropdown menu that allows you to dynamically select which measure from your query is displayed.
+
+*   **With one dimension,** it renders a standard bar chart.
+*   **With two dimensions,** it renders a grouped or stacked bar chart, using the second dimension to create the groups or stacks.
