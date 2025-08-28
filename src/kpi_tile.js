@@ -1,4 +1,3 @@
-import 'chart.js/auto';
 looker.plugins.visualizations.add({
   // --- Visualization Configuration ---
   options: {
@@ -20,7 +19,7 @@ looker.plugins.visualizations.add({
     },
     showTooltip: {
         type: 'boolean',
-        label: 'Show Measure Description on KPI Name Hover on Dashboard',
+        label: 'Show Description Icon',
         default: true,
         section: 'Tooltip'
     },
@@ -118,73 +117,118 @@ looker.plugins.visualizations.add({
           height: 100%;
           font-family: 'Google Sans', 'Noto Sans', 'Noto Sans JP', 'Noto Sans CJK KR', 'Noto Sans Arabic UI', 'Noto Sans Devanagari UI', 'Noto Sans Hebrew UI', 'Noto Sans Thai UI', 'Helvetica', 'Arial', sans-serif;
           text-align: center;
+          padding: 20px;
+          box-sizing: border-box;
         }
         .kpi-title-container {
-            position: relative;
+          display: flex;
+          flex-direction: row;
+          justify-content: center;
+          align-items: center;
+          position: relative;
+          margin-top: 5px;
         }
         .kpi-title {
-          font-size: 14px;
+          font-size: 12px;
           color: #616161;
-          margin-bottom: 5px;
+          font-weight: bold;
+          margin-right: 8px;
+        }
+        .kpi-info-icon {
+          font-family: 'Serif';
+          font-style: italic;
+          font-weight: bold;
+          font-size: 10px;
+          color: #fff;
+          background-color: #a8a8a8;
+          border-radius: 50%;
+          width: 14px;
+          height: 14px;
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          cursor: pointer;
+          user-select: none;
         }
         .kpi-tooltip {
             visibility: hidden;
-            width: 200px;
-            background-color: #555;
+            width: 180px;
+            background-color: #333;
             color: #fff;
-            text-align: center;
+            text-align: left;
             border-radius: 6px;
-            padding: 5px 0;
+            padding: 10px;
             position: absolute;
-            z-index: 1;
-            bottom: 125%;
+            z-index: 10;
+            bottom: 150%;
             left: 50%;
-            margin-left: -100px;
+            margin-left: -90px;
             opacity: 0;
-            transition: opacity 0.3s;
+            transition: opacity 0.3s, visibility 0.3s;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
         }
-        .kpi-title-container:hover .kpi-tooltip {
+        .kpi-tooltip.visible {
             visibility: visible;
             opacity: 1;
+        }
+        .kpi-tooltip-content {
+            font-size: 12px;
+        }
+        .kpi-tooltip-close {
+            position: absolute;
+            top: 2px;
+            right: 8px;
+            font-size: 22px;
+            font-weight: bold;
+            cursor: pointer;
+            color: #ccc;
+        }
+        .kpi-tooltip-close:hover {
+            color: #fff;
         }
         .kpi-value {
           font-weight: bold;
           line-height: 1;
+          margin-top: 5px;
         }
         .kpi-comparison-container {
             display: flex;
             flex-direction: column;
             align-items: center;
-            margin-top: 10px;
+            margin-top: 5px;
         }
         .kpi-comparison {
-          font-size: 16px;
+          font-size: 14px;
           font-weight: 500;
-          margin-top: 8px;
+          margin-top: 5px;
         }
         .kpi-chart-container {
           width: 100%;
-          height: 100px;
+          height: 60px;
           margin-top: 10px;
         }
         .progress-bar-container {
           width: 80%;
-          height: 10px;
+          height: 8px;
           background-color: #e0e0e0;
-          border-radius: 5px;
+          border-radius: 4px;
           margin-top: 10px;
         }
         .progress-bar {
           height: 100%;
-          border-radius: 5px;
+          border-radius: 4px;
         }
       </style>
       <div class="kpi-tile-container">
+        <div class="kpi-value"></div>
         <div class="kpi-title-container">
             <div class="kpi-title"></div>
-            <div class="kpi-tooltip"></div>
+            <div class="kpi-info-icon">i</div>
+            <div class="kpi-tooltip">
+                <span class="kpi-tooltip-close">&times;</span>
+                <div class="kpi-tooltip-content"></div>
+            </div>
         </div>
-        <div class="kpi-value"></div>
         <div class="kpi-comparison-container">
             <div class="kpi-comparison" id="kpi-comparison-1"></div>
             <div class="kpi-comparison" id="kpi-comparison-2"></div>
@@ -197,6 +241,18 @@ looker.plugins.visualizations.add({
         </div>
       </div>
     `;
+
+    const infoIcon = element.querySelector('.kpi-info-icon');
+    const tooltip = element.querySelector('.kpi-tooltip');
+    const closeButton = element.querySelector('.kpi-tooltip-close');
+
+    infoIcon.onclick = () => {
+        tooltip.classList.toggle('visible');
+    };
+
+    closeButton.onclick = () => {
+        tooltip.classList.remove('visible');
+    };
   },
 
   updateAsync: function(data, element, config, queryResponse, details, done) {
@@ -222,6 +278,8 @@ looker.plugins.visualizations.add({
 
     const titleElement = element.querySelector('.kpi-title');
     const tooltipElement = element.querySelector('.kpi-tooltip');
+    const tooltipContentElement = element.querySelector('.kpi-tooltip-content');
+    const infoIconElement = element.querySelector('.kpi-info-icon');
     const valueElement = element.querySelector('.kpi-value');
     const comparison1Element = element.querySelector('#kpi-comparison-1');
     const comparison2Element = element.querySelector('#kpi-comparison-2');
@@ -230,10 +288,12 @@ looker.plugins.visualizations.add({
     const progressBar = element.querySelector('.progress-bar');
 
     titleElement.textContent = config.title || kpiMeasure.label_short || kpiMeasure.label;
-    if (config.showTooltip) {
-        tooltipElement.textContent = kpiMeasure.description;
+    if (config.showTooltip && kpiMeasure.description) {
+        tooltipContentElement.textContent = kpiMeasure.description;
+        infoIconElement.style.display = 'flex';
     } else {
-        tooltipElement.style.display = 'none';
+        infoIconElement.style.display = 'none';
+        tooltipElement.classList.remove('visible');
     }
 
     valueElement.textContent = kpiValue;
@@ -300,37 +360,41 @@ looker.plugins.visualizations.add({
     // Line Chart
     if (config.show_line_chart && queryResponse.fields.dimensions.length > 0) {
       chartContainer.style.display = 'block';
-      const dimension = queryResponse.fields.dimensions[0];
-      const labels = data.map(row => row[dimension.name].value);
-      const chartData = data.map(row => row[kpiMeasure.name].value);
+      import('chart.js/auto').then((Chart) => {
+        const dimension = queryResponse.fields.dimensions[0];
+        const labels = data.map(row => row[dimension.name].value);
+        const chartData = data.map(row => row[kpiMeasure.name].value);
 
-      const ctx = element.querySelector('#kpi-chart').getContext('2d');
+        const ctx = element.querySelector('#kpi-chart').getContext('2d');
 
-      if (this._chart) {
-        this._chart.destroy();
-      }
-
-      this._chart = new Chart(ctx, {
-        type: 'line',
-        data: {
-          labels: labels,
-          datasets: [{
-            data: chartData,
-            borderColor: config.line_chart_color,
-            borderWidth: 2,
-            pointRadius: 0,
-            fill: false
-          }]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          legend: { display: false },
-          scales: {
-            x: { display: false },
-            y: { display: false }
-          }
+        if (this._chart) {
+          this._chart.destroy();
         }
+
+        this._chart = new Chart.default(ctx, {
+          type: 'line',
+          data: {
+            labels: labels,
+            datasets: [{
+              data: chartData,
+              borderColor: config.line_chart_color,
+              borderWidth: 2,
+              pointRadius: 0,
+              fill: false
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: { display: false },
+            },
+            scales: {
+              x: { display: false },
+              y: { display: false }
+            }
+          }
+        });
       });
     }
 
