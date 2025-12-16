@@ -93,9 +93,16 @@ looker.plugins.visualizations.add({
         // Internal state for image loading
         this._img = new Image();
         this._imgLoaded = false;
+        this._imgError = false;
         this._img.crossOrigin = "Anonymous";
         this._img.onload = () => {
             this._imgLoaded = true;
+            this._imgError = false;
+            this.frameUpdate();
+        };
+        this._img.onerror = () => {
+            this._imgLoaded = false;
+            this._imgError = true;
             this.frameUpdate();
         };
 
@@ -128,8 +135,14 @@ looker.plugins.visualizations.add({
 
         if (this._img.src !== imageUrl) {
             this._imgLoaded = false;
+            this._imgError = false;
             this._img.src = imageUrl;
             // The onload handler will trigger a re-render
+            return;
+        }
+
+        if (this._imgError) {
+            this.addError({ title: "Image Load Error", message: `Could not load image from URL: ${imageUrl}` });
             return;
         }
 

@@ -99,9 +99,16 @@ looker.plugins.visualizations.add({
         // Internal state
         this._heatmapInstance = null;
         this._imgLoaded = false;
+        this._imgError = false;
         this.img.crossOrigin = "Anonymous";
         this.img.onload = () => {
             this._imgLoaded = true;
+            this._imgError = false;
+            this.frameUpdate();
+        };
+        this.img.onerror = () => {
+            this._imgLoaded = false;
+            this._imgError = true;
             this.frameUpdate();
         };
 
@@ -133,7 +140,13 @@ looker.plugins.visualizations.add({
 
         if (this.img.src !== imageUrl) {
             this._imgLoaded = false;
+            this._imgError = false;
             this.img.src = imageUrl;
+            return;
+        }
+
+        if (this._imgError) {
+            this.addError({ title: "Image Load Error", message: `Could not load image from URL: ${imageUrl}` });
             return;
         }
 
