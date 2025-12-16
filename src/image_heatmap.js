@@ -9,7 +9,7 @@ looker.plugins.visualizations.add({
             type: "string",
             label: "Image URL",
             display: "text",
-            default: "https://localhost:8080/map_background.png",
+            default: "https://raw.githubusercontent.com/zacharagosa/KPI-Tile/main/map_background.png",
             section: "Data"
         },
         coordinateMode: {
